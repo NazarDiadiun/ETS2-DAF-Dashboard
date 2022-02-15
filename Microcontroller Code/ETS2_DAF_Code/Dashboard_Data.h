@@ -1,4 +1,6 @@
 bool GamePaused = false;
+bool TrailerConnected = false;
+
 bool Ignition = false; // Включение панели приборов (зажигание)
 bool EngineOn = false;
 

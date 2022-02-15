@@ -1,92 +1,91 @@
+struct can_frame Dashboard_Main; // CAN Packet Structure for basic dashboard functions (ignition, backlight etc)
+struct can_frame Right_Display; // CAN Packet Structure for right display (Time, Temperature)
+struct can_frame Icons; // CAN Packet Structure for icons control (blinkers, lights etc)
+struct can_frame Arrows; // CAN Packet Structure to control all gauges except tachometer and speedometer (there are in V-CAN Bus)
+struct can_frame Time; // CAN Packet Structure to show time on right display
 
-struct can_frame Dashboard_Main;
-struct can_frame Right_Display;
-struct can_frame Icons;
-struct can_frame Arrows;
-struct can_frame Time;
-
-void Dashboard_Main_Callback()
+void Dashboard_Main_Callback() // Dashboard Main Callback
 {
-  Dashboard_Main.can_id  = 0x18FF3327 | CAN_EFF_FLAG;
+  Dashboard_Main.can_id  = 0x18FF3327 | CAN_EFF_FLAG; // CAN ID: 0x18FF3327
   Dashboard_Main.can_dlc = 8;
 
-  Dashboard_Main.data[0] = !Ignition | (Ignition << 2);
-  Dashboard_Main.data[1] = Dashboard_Backlight * 255 / 100;
-  Dashboard_Main.data[2] = MiniDisplays_Backlight * 255 / 100;
-  Dashboard_Main.data[3] = Icons_Backlight * 255 / 100;
+  Dashboard_Main.data[0] = !Ignition | (Ignition << 2); // Here is Ignition state (to turn on or off dashboard)
+  Dashboard_Main.data[1] = Dashboard_Backlight * 255 / 100; // Dashboard backlight (gauges, needles)
+  Dashboard_Main.data[2] = MiniDisplays_Backlight * 255 / 100; // Right and Left displays backlight
+  Dashboard_Main.data[3] = Icons_Backlight * 255 / 100; // icons brightness
   Dashboard_Main.data[4] = 0xFA;
   Dashboard_Main.data[5] = 0xFF;
   Dashboard_Main.data[6] = 0xFF;
-  Dashboard_Main.data[7] = Sound_Loudness * 255 / 100;
+  Dashboard_Main.data[7] = Sound_Loudness * 255 / 100; // Sound loudness
 
-  ICAN.sendMessage(&Dashboard_Main);
+  ICAN.sendMessage(&Dashboard_Main); // Send this packet to I-CAN Bus
 }
 
 void Right_Display_Callback()
 {
-  Right_Display.can_id  = 0x18FF3427 | CAN_EFF_FLAG;
+  Right_Display.can_id  = 0x18FF3427 | CAN_EFF_FLAG; // CAN ID: 0x18FF3427
   Right_Display.can_dlc = 8;
 
-  bool NegativeTemperature = false;
-  if (OutsideTemperature < 0.0)
-    NegativeTemperature = true;
+  bool NegativeTemperature = false; // Negative outside temperature flag
+  if (OutsideTemperature < 0.0) // if outside temperature lower than 0.0
+    NegativeTemperature = true; // make neg.temp. flag true
 
-  Right_Display.data[0] = 1 << 0 | (1 << 6) | (!NegativeTemperature << 4);
-  Right_Display.data[1] = 0x20;
+  Right_Display.data[0] = 1 << 0 | (1 << 6) | (!NegativeTemperature << 4); // Placing negative temperature sign to 0 byte 
+  Right_Display.data[1] = 0x20; // First number (can be only 1 - for farenheit, i think)
 
-  int OutsideTemperatureInt = OutsideTemperature * 10.0; // Умножаем температуру на 10, чтобы перевести в целочисленное значение.
-  OutsideTemperatureInt = abs(OutsideTemperatureInt);
+  int OutsideTemperatureInt = OutsideTemperature * 10.0; // Multiple temperature by 10 to get integer (and save decimal, but x10)
+  OutsideTemperatureInt = abs(OutsideTemperatureInt); // make it absolute
 
-  byte Temperature_FirstNumber = OutsideTemperatureInt / 100;
-  byte Temperature_SecondNumber = (OutsideTemperatureInt % 100) / 10;
-  byte Temperature_PointNumber = OutsideTemperatureInt % 10;
+  byte Temperature_FirstNumber = OutsideTemperatureInt / 100; // First number of temperature - just divide by 100
+  byte Temperature_SecondNumber = (OutsideTemperatureInt % 100) / 10; // Second number - modulo from 100 and divide by 10
+  byte Temperature_PointNumber = OutsideTemperatureInt % 10; // last number (decimal) - modulo from 10
 
-  if (OutsideTemperatureInt >= 100)
-    Right_Display.data[2] = (Temperature_FirstNumber << 0) | (1 << 5) | (1 << 4);
-  else
-    Right_Display.data[2] = 0x20;
+  if (OutsideTemperatureInt >= 100) // if temperature higher than 10.0 (because recently we multiplied it by 10)
+    Right_Display.data[2] = (Temperature_FirstNumber << 0) | (1 << 5) | (1 << 4); // We need to turn this number firstly and than show it
+  else // else if temperature less than 10.0
+    Right_Display.data[2] = 0x20; // Disable this number
 
-  Right_Display.data[3] = (Temperature_SecondNumber << 0) | (1 << 5) | (1 << 4);
-  Right_Display.data[4] = (Temperature_PointNumber << 0) | (1 << 5) | (1 << 4);
+  Right_Display.data[3] = (Temperature_SecondNumber << 0) | (1 << 5) | (1 << 4); // Turn on and show 2 number
+  Right_Display.data[4] = (Temperature_PointNumber << 0) | (1 << 5) | (1 << 4); // And decimal 
 
   Right_Display.data[5] = 0x00;
   Right_Display.data[6] = 0x00;
   Right_Display.data[7] = 0xFF;
 
-  ICAN.sendMessage(&Right_Display);
+  ICAN.sendMessage(&Right_Display); // Send this packet to I-CAN Bus
 }
 
 void Icons_Callback()
 {
-  Icons.can_id  = 0x18FF3927 | CAN_EFF_FLAG;
+  Icons.can_id  = 0x18FF3927 | CAN_EFF_FLAG; // CAN ID: 0x18FF3927
   Icons.can_dlc = 8;
 
-  // Обработка прерывчастого сигнала предупреждения
-  if (millis() - WarnTimer > 500 && Warning || millis() - WarnTimer > 500 && Alarm) // Если активен сигнал предупреждения, и прошло 350 мс цикл
+  // Timer to make warining and alarm sounds repeatable (every 0.5s)
+  if (millis() - WarnTimer > 500 && Warning || millis() - WarnTimer > 500 && Alarm) // if Waning or Alarm flag is active, and timer is triggered
   {
-    if (Warning)
-      SoundWarnOnce = !SoundWarnOnce; // Инвертируем значение
-    if (Alarm)
-      SoundAlarmOnce = !SoundAlarmOnce;
+    if (Warning) // if Warning
+      SoundWarnOnce = !SoundWarnOnce; // inverting flag state
+    if (Alarm) // if Alarm
+      SoundAlarmOnce = !SoundAlarmOnce; // inverting flag state
 
-    WarnTimer = millis(); // Сбрасываем таймер
+    WarnTimer = millis(); // resetting timer
   }
 
-  Icons.data[0] = (IndicatorLowFuel << 2);
-  Icons.data[1] = IconLeftTruck | (IconLeftTrailer << 2) | (IconHighBeam << 4) | (IconStop << 6);
-  Icons.data[2] = IconLowGear | (IconRightTrailer << 2) | (IconRightTruck << 4) | (IconRetarder << 6);
-  Icons.data[3] = IconWindowCycleArrow | (IconCoil << 2) | (IconAxisBlock << 4) | (IconPTO << 6);
-  Icons.data[4] = IconASR | (IconFogFront << 2) | (IconFogRear << 4) | (IconParkingBrake << 6);
-  Icons.data[5] = IconChassisTransport | (IconWorkLight << 2) | (IconTrailerAbs << 4);
-  Icons.data[6] = SoundAlarmOnce | (SoundAlarmCont << 2) | (SoundWarnOnce << 4) | (SoundWarnCont << 6);
-  Icons.data[7] = (SoundBlinker << 6) | (!SoundBlinker << 4);
+  Icons.data[0] = (IndicatorLowFuel << 2); // Low fuel indicator here
+  Icons.data[1] = IconLeftTruck | (IconLeftTrailer << 2) | (IconHighBeam << 4) | (IconStop << 6); // Left brinkers. High beam and STOP sign icons
+  Icons.data[2] = IconLowGear | (IconRightTrailer << 2) | (IconRightTruck << 4) | (IconRetarder << 6); // Low shift gear, right blinker and retarder here
+  Icons.data[3] = IconWindowCycleArrow | (IconCoil << 2) | (IconAxisBlock << 4) | (IconPTO << 6); // idn what window with arrow in it means, but yeah. And Coil, differential block and PTO icons here
+  Icons.data[4] = IconASR | (IconFogFront << 2) | (IconFogRear << 4) | (IconParkingBrake << 6); // ASR, Fog light front and rear and parking brakes
+  Icons.data[5] = IconChassisTransport | (IconWorkLight << 2) | (IconTrailerAbs << 4); // Chassis not in transport, Work lights on, and trailer ABS icons
+  Icons.data[6] = SoundAlarmOnce | (SoundAlarmCont << 2) | (SoundWarnOnce << 4) | (SoundWarnCont << 6); // Warning and Alarm continous and one-time sounds
+  Icons.data[7] = (SoundBlinker << 6) | (!SoundBlinker << 4); // Blinker sound
 
-  ICAN.sendMessage(&Icons);
+  ICAN.sendMessage(&Icons); // Send this packet to I-CAN Bus
 }
 
 void Arrows_Callback()
 {
-  Arrows.can_id  = 0x18FF3227 | CAN_EFF_FLAG;
+  Arrows.can_id  = 0x18FF3227 | CAN_EFF_FLAG; // CAN ID: 0x18FF3227
   Arrows.can_dlc = 8;
 
   // Fuel 0x00 - 0x23 HEX
@@ -125,12 +124,12 @@ void Arrows_Callback()
   Arrows.data[6] = TempLow;
   Arrows.data[7] = TempHigh + 1;
 
-  ICAN.sendMessage(&Arrows);
+  ICAN.sendMessage(&Arrows); // Send this packet to I-CAN Bus
 }
 
 void Time_Callback()
 {
-  Time.can_id  = 0x18FEE627 | CAN_EFF_FLAG;
+  Time.can_id  = 0x18FEE627 | CAN_EFF_FLAG; // CAN ID: 0x18FEE627
   Time.can_dlc = 8;
 
   Time.data[0] = 0x00;
@@ -142,5 +141,5 @@ void Time_Callback()
   Time.data[6] = 0x7D;
   Time.data[7] = 0x7D;
 
-  ICAN.sendMessage(&Time);
+  ICAN.sendMessage(&Time); // Send this packet to I-CAN Bus
 }
