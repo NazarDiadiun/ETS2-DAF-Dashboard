@@ -1,0 +1,31 @@
+Output: Gerber X2 Files
+Type  : GerberX2
+From  : Project [DAF DIP-4 PCB.PrjPcb]
+   Generated File[DAF DIP-4 PCB_Copper_Signal_Top.gbr]
+   Generated File[DAF DIP-4 PCB_Copper_Signal_Bot.gbr]
+   Generated File[DAF DIP-4 PCB_Pads_Bot.gbr]
+   Generated File[DAF DIP-4 PCB_Pads_Top.gbr]
+   Generated File[DAF DIP-4 PCB_Legend_Bot.gbr]
+   Generated File[DAF DIP-4 PCB_Soldermask_Bot.gbr]
+   Generated File[DAF DIP-4 PCB_Paste_Bot.gbr]
+   Generated File[DAF DIP-4 PCB_Legend_Top.gbr]
+   Generated File[DAF DIP-4 PCB_Paste_Top.gbr]
+   Generated File[DAF DIP-4 PCB_Soldermask_Top.gbr]
+   Generated File[DAF DIP-4 PCB_Keep-out.gbr]
+   Generated File[DAF DIP-4 PCB_Mechanical_13.gbr]
+   Generated File[DAF DIP-4 PCB_Mechanical_1.gbr]
+   Generated File[DAF DIP-4 PCB_Mechanical_15.gbr]
+   Generated File[DAF DIP-4 PCB_Profile.gbr]
+   Generated File[DAF DIP-4 PCB_NPTH_Drill.gbr]
+   Generated File[DAF DIP-4 PCB_PTH_Drill.gbr]
+   Generated File[DAF DIP-4 PCB_Drawing_1.gbr]
+   Generated File[DAF DIP-4 PCB_Drillmap_1.gbr]
+   Generated File[DAF DIP-4 PCB.RUL]
+   Generated File[DAF DIP-4 PCB.EXTREP]
+   Generated File[DAF DIP-4 PCB.REP]
+
+
+Files Generated   : 22
+Documents Printed : 0
+
+Finished Output Generation At 02:24:00 On 15/02/2022
