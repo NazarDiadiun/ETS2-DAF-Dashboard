@@ -46,11 +46,13 @@ void ParseIncoming()
     // Truck Water Temperature
     WaterTemperature = ETS2["Params"][3];
 
-    // Truck Adblue Level (Instead of 1 air pressure gauge)
-    Air1 = ETS2["Params"][4];
+    // Truck Adblue Level (Instead of 1 air pressure gauge. Need to divide by 10 to get correct float value)
+    float AdblueJSON = ETS2["Params"][4];
+    AdBlue = AdblueJSON / 10.0;
+    Air1 = AdBlue;
 
     // Truck Air Pressure (Need to convert from psi to 0-100% gauge)
-    Air2 = map(ETS2["Params"][5], 0, 1400, 0, 100);
+    Air2 = map(ETS2["Params"][5], 0, 140, 0, 100);
 
     // Truck Ingition State
     if (!Ignition && ETS2["Params"][11]) // if variable is not true & current ignition state is ON

@@ -10,6 +10,7 @@ int WaterTemperature = 0; // Температура охл. жидкости
 float Fuel = 0.0; // Уровень топлива в процентах 0-100%
 float Air1 = 0.0; // Давление в первом контуре
 float Air2 = 0.0; // Давление во втором контуре
+float AdBlue = 0.0;
 
 float Distance = 0.0; // Общий пробег
 float DistanceDaily = 0.0; // Суточный пробег
