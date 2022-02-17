@@ -11,3 +11,6 @@ void Arrows_Callback();
 void Time_Callback();
 
 void Mileage_Read_Callback();
+
+byte SearchIcon(byte IconID, byte IconType);
+bool ToggleIcon(byte IconID, byte IconType);

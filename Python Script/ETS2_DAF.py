@@ -9,7 +9,7 @@ from pynput import keyboard
 keyboard = Controller()
 
 # URL to parse telemetry data
-url = 'http://192.168.1.10:25555/api/ets2/telemetry'
+url = 'http://127.0.0.1:25555/api/ets2/telemetry'
 # COM port to connect to dashboard controller
 COMport = "COM3"
 # Controller send frequency (Hz)
@@ -156,7 +156,7 @@ while (True):
 
     ser.write((SendString + '\n').encode())
 
-    time.sleep(frequency)
+    time.sleep(0.07)
 
     SerialCommand = ""
     SerialCommandArrived = False

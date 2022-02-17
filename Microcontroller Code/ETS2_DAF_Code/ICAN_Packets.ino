@@ -60,24 +60,13 @@ void Icons_Callback()
   Icons.can_id  = 0x18FF3927 | CAN_EFF_FLAG; // CAN ID: 0x18FF3927
   Icons.can_dlc = 8;
 
-  // Timer to make warining and alarm sounds repeatable (every 0.5s)
-  if (millis() - WarnTimer > 500 && Warning || millis() - WarnTimer > 500 && Alarm) // if Waning or Alarm flag is active, and timer is triggered
-  {
-    if (Warning) // if Warning
-      SoundWarnOnce = !SoundWarnOnce; // inverting flag state
-    if (Alarm) // if Alarm
-      SoundAlarmOnce = !SoundAlarmOnce; // inverting flag state
-
-    WarnTimer = millis(); // resetting timer
-  }
-
   Icons.data[0] = (IndicatorLowFuel << 2); // Low fuel indicator here
   Icons.data[1] = IconLeftTruck | (IconLeftTrailer << 2) | (IconHighBeam << 4) | (IconStop << 6); // Left brinkers. High beam and STOP sign icons
   Icons.data[2] = IconLowGear | (IconRightTrailer << 2) | (IconRightTruck << 4) | (IconRetarder << 6); // Low shift gear, right blinker and retarder here
   Icons.data[3] = IconWindowCycleArrow | (IconCoil << 2) | (IconAxisBlock << 4) | (IconPTO << 6); // idn what window with arrow in it means, but yeah. And Coil, differential block and PTO icons here
   Icons.data[4] = IconASR | (IconFogFront << 2) | (IconFogRear << 4) | (IconParkingBrake << 6); // ASR, Fog light front and rear and parking brakes
   Icons.data[5] = IconChassisTransport | (IconWorkLight << 2) | (IconTrailerAbs << 4); // Chassis not in transport, Work lights on, and trailer ABS icons
-  Icons.data[6] = SoundAlarmOnce | (SoundAlarmCont << 2) | (SoundWarnOnce << 4) | (SoundWarnCont << 6); // Warning and Alarm continous and one-time sounds
+  Icons.data[6] = 0x00; 
   Icons.data[7] = (SoundBlinker << 6) | (!SoundBlinker << 4); // Blinker sound
 
   ICAN.sendMessage(&Icons); // Send this packet to I-CAN Bus

@@ -11,6 +11,7 @@ float Fuel = 0.0; // Уровень топлива в процентах 0-100%
 float Air1 = 0.0; // Давление в первом контуре
 float Air2 = 0.0; // Давление во втором контуре
 float AdBlue = 0.0;
+int Gear = 0;
 
 float Distance = 0.0; // Общий пробег
 float DistanceDaily = 0.0; // Суточный пробег
@@ -22,7 +23,7 @@ byte TimeMinutes = 0; // Минуты
 byte Dashboard_Backlight = 100; // Яркость подсветки приборной панели (стрелки, шкалы)
 byte MiniDisplays_Backlight = 100; // Яркость подстветки экранчиков (время, пробег)
 byte Icons_Backlight = 100; // Яркость подсветки иконок
-byte Sound_Loudness = 85; // Громкость звукового сигнала
+byte Sound_Loudness = 70; // Громкость звукового сигнала
 
 float OutsideTemperature = 18.0; // Температура воздуха снаружи
 
@@ -34,6 +35,8 @@ bool IconRightTrailer = false;
 bool IconRightTruck = false;
 
 bool IndicatorLowFuel = false;
+bool LowBattery = false;
+bool LowOilPressure = false;
 bool IndicatorTacho = false;
 
 bool IconStop = false;
@@ -55,13 +58,9 @@ bool IconChassisTransport = false;
 
 bool SoundBlinker = false;
 bool SoundWarnOnce = false;
-bool SoundWarnCont = false;
 bool SoundAlarmOnce = false;
 bool SoundAlarmCont = false;
 
-bool Warning = false;
-bool Alarm = false;
-unsigned long WarnTimer = 0;
-
 byte DisplayActive = false;
-byte DisplayWarningsCount = 1;
+byte DisplayAlarmCount = 0;
+byte DisplayWarningsCount = 0;
