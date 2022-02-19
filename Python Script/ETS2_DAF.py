@@ -31,20 +31,12 @@ def on_press(key):
             key))
 
 
-def round_floats(o):
-    if isinstance(o, float):
-        return round(o, 2)
-    if isinstance(o, dict):
-        return {k: round_floats(v) for k, v in o.items()}
-    if isinstance(o, (list, tuple)):
-        return [round_floats(x) for x in o]
-    return o
-
 DAF = {
     "Game": {},
     "Params": {},
     "Icon": {},
-    "Warn": {}
+    "Warn": {},
+    "Wear": {}
 }
 
 ser = serial.Serial(
@@ -104,7 +96,7 @@ while (True):
                  int(HTTPresponse['truck']['oilPressure']),
                  int(HTTPresponse['truck']['fuelAverageConsumption']) * 100,
                  int(HTTPresponse['truck']['batteryVoltage']) * 10,
-                 HTTPresponse['truck']['gear'],
+                 int(HTTPresponse['truck']['gear']),
                  int(HTTPresponse['truck']['electricOn']),
                  int(HTTPresponse['truck']['engineOn']),
                  int(HTTPresponse['trailer1']['attached']),
@@ -152,7 +144,21 @@ while (True):
 
     DAF['Icon'] = iconarr
 
-    SendString = json.dumps(round_floats(DAF))
+# 0 - Engine Wear
+# 1 - Transmission Wear
+# 2 - Cabin Wear
+# 3 - Chassis Wear
+# 4 - Wheels Wear
+
+    weararr = [int(HTTPresponse['truck']['wearEngine'] * 100),
+               int(HTTPresponse['truck']['wearTransmission'] * 100),
+               int(HTTPresponse['truck']['wearCabin'] * 100),
+               int(HTTPresponse['truck']['wearChassis'] * 100),
+               int(HTTPresponse['truck']['wearWheels'] * 100)]
+
+    DAF['Wear'] = weararr
+
+    SendString = json.dumps(DAF)
 
     ser.write((SendString + '\n').encode())
 

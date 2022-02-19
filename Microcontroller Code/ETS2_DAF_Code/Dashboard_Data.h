@@ -1,5 +1,6 @@
 bool GamePaused = false;
 bool TrailerConnected = false;
+byte EngineWear = 0, TransmissionWear = 0, CabinWear = 0, ChassisWear = 0, WheelsWear = 0;
 
 bool Ignition = false; // Включение панели приборов (зажигание)
 bool EngineOn = false;

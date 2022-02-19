@@ -120,18 +120,18 @@ void ParseIncoming()
       {
         SoundAlarmCont = true;
         /*
-        if (!ETS2["Warn"][6]) // if it is just alarm (not so critical)
-        {
-          
+          if (!ETS2["Warn"][6]) // if it is just alarm (not so critical)
+          {
+
           DisplayWarningsCount = 1;
           SoundAlarmOnce = false; // disabling alarm sound (to not interferece with warning in case)
           SoundWarnOnce = true;
-        }
-        else // if air pressure too low (critical)
-        {
+          }
+          else // if air pressure too low (critical)
+          {
           SoundWarnOnce = false;
           SoundAlarmOnce = true; // Enabling continous alarm sound
-        }*/
+          }*/
       }
     }
     else // if air pressure is normal
@@ -159,7 +159,7 @@ void ParseIncoming()
 
     LowBattery = ETS2["Warn"][5];
     ToggleIcon(BATTERY, ALARM, LowBattery);
-    
+
     LowOilPressure = ETS2["Warn"][3];
     ToggleIcon(OIL_PRESSURE, ALARM, LowOilPressure);
 
@@ -177,6 +177,38 @@ void ParseIncoming()
     // Displays Backlight (time, odometer etc)
     MiniDisplays_Backlight = ETS2["Icon"][8];
     Icons_Backlight = MiniDisplays_Backlight; // We can also adjust icons backlight brightness
+
+    EngineWear = ETS2["Wear"][0];
+    if (EngineWear >= 3 && EngineWear < 5)
+      ToggleIcon(ENGINE, WARNING, 1);
+    else if (EngineWear >= 5)
+    {
+      ToggleIcon(ENGINE, WARNING, 0);
+      ToggleIcon(ENGINE, ALARM, 1);
+    }
+    else if (EngineWear < 3)
+    {
+      ToggleIcon(ENGINE, WARNING, 0);
+      ToggleIcon(ENGINE, ALARM, 0);
+    }
+
+    TransmissionWear = ETS2["Wear"][1];
+    if (TransmissionWear >= 3 && TransmissionWear < 5)
+      ToggleIcon(TRANSMISSION, WARNING, 1);
+    else if (TransmissionWear >= 5)
+    {
+      ToggleIcon(TRANSMISSION, WARNING, 0);
+      ToggleIcon(TRANSMISSION, ALARM, 1);
+    }
+    else if (TransmissionWear < 3)
+    {
+      ToggleIcon(TRANSMISSION, WARNING, 0);
+      ToggleIcon(TRANSMISSION, ALARM, 0);
+    }
+
+    CabinWear = ETS2["Wear"][2];
+    ChassisWear = ETS2["Wear"][3];
+    WheelsWear = ETS2["Wear"][4];
 
     newData = false; // Data Parsed fully
     IncomingData = ""; // Clearing incoming data string
