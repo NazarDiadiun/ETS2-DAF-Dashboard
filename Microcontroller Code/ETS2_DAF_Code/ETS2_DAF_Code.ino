@@ -1,7 +1,7 @@
 #include <SPI.h>
 #include <mcp2515.h>
 #include <EEPROM.h>
-
+#include <avr/pgmspace.h>
 #include "Dashboard_Data.h"
 #include "Main_Display.h"
 #include "Project_Functions.h"
@@ -73,241 +73,180 @@ void setup()
   DAF.addTask(TS_MileageReset);
   TS_MileageReset.enable();
 
- // Ignition = true;
+  //Ignition = true;
+  DisplayStartUp = true;
   DisplayActive = true;
   //EngineOn = false;
 
-  //ToggleIcon(ASR, WARNING, 1);
+  //ToggleIcon(COOLANT_LEVEL, WARNING, 1);
+  //ToggleIcon(EBS_TRUCK, ALARM, 1);
+  //ToggleIcon(ENGINE, ALARM, 1);
+  //ToggleIcon(ENGINE, WARNING, 1);
 }
 
-long timer = 0;
-
 long timer2 = 0;
-byte counter = 0;
 
-byte DisplayCounter1 = 0;
-struct can_frame Main_Display1;
-struct can_frame Main_Display3;
 void loop()
 {
   ParseIncoming();
 
-  if (millis() - timer2 > 1500)
+  if (millis() - DisplayUpperTimer > DisplayUpperDelay && DisplayActive)
+  {
+    DisplayUpperFrame.can_id  = 0x18FF3527 | CAN_EFF_FLAG;
+    DisplayUpperFrame.can_dlc = 8;
+
+    FillDisplayUpperArray();
+
+    DisplayUpperCnt++;
+    if (DisplayUpperCnt > 3)
+      DisplayUpperCnt = 0;
+
+    for (byte cnt = 0; cnt < 8; cnt++)
+    {
+      DisplayUpperFrame.data[cnt] = DisplayUpperArray[DisplayUpperCnt][cnt];
+    }
+
+    ICAN.sendMessage(&DisplayUpperFrame);
+
+    DisplayUpperTimer = millis();
+
+    if (DisplayUpperCnt == 2)
+      DisplayUpperDelay = 30;
+    else
+      DisplayUpperDelay = 10;
+  }
+  if (!DisplayActive)
+    DisplayUpperCnt = 0;
+
+
+  if (millis() - timer2 > 700)
   {
     timer2 = millis();
     counter++;
-    //Serial.println(counter);
+    //Speed = counter;
+    //CruiseControl = counter;
+    //DisplayTurbo[0][4] = counter;
+
+    //Serial.println(counter, HEX);
   }
-  if (millis() - timer > 40 && DisplayCounter1 == 0 || millis() - timer >= 10 && DisplayCounter1 == 1 || millis() - timer >= 10 && DisplayCounter1 == 2)
+
+  /* Text mode icons
+     0х10 чувак
+     трасса км
+     трасса мол
+     трасса
+     спальник
+     сервис
+     часи
+     фура
+     работа
+     руль
+     заправка
+
+  */
+
+  if (millis() - DisplayStratupTimer > DisplayStratupDelay && DisplayStartUp)
   {
-    byte WarnStartIndex = 3;
-    // Checking for active warnings or alarms
-    if (DisplayIcons[0] == 0 && DisplayIcons[1] == 0 && DisplayIcons[2] == 0)
-      ActiveAlarm = false;
-    else
-      ActiveAlarm = true;
+    if (DisplayPage < 2 || DisplayPage == 2 && DisplayStartupIconCnt == 9)
+      DisplayPage++;
 
-    if (DisplayIcons[3] == 0 && DisplayIcons[4] == 0 && DisplayIcons[5] == 0 && DisplayIcons[6] == 0 && DisplayIcons[7] == 0 && DisplayIcons[8] == 0)
-      ActiveWarn = false;
-    else
-      ActiveWarn = true;
-
-    //setting color for display (off/off, yellow/off, red/off, red/yellow, yellow/yellow)
-    if (ActiveAlarm)
+    if (DisplayPage == 1)
     {
-      DisplayUpAlarm = true;
-      DisplayUpWarn = false;
-
-      if (ActiveWarn) // if alarm is on and some warning message are displaying
-        WarnStartIndex = 6; // display first 3 of them (3 left is hidden)
-    }
-    else
-    {
-      DisplayUpAlarm = false;
-      if (ActiveWarn)
+      if (DisplayAlarmCount != 0 || DisplayWarningsCount != 0)
       {
-        if (DisplayIcons[3] != 0 || DisplayIcons[4] != 0 || DisplayIcons[5] != 0)
-          DisplayUpWarn = true;
+        DisplayStartupStage1_FillArray(); // Filling up 3727 Array
+        DisplayCnt = 0;
+        DisplayArraySize = 3;
+
+        DisplayStratupTimer = millis();
+        DisplayStratupDelay = 3000;
       }
       else
-        DisplayUpWarn = false;
+        DisplayStratupDelay = 0;
     }
-    if (ActiveWarn)
+    else if (DisplayPage == 2) // Showing warnings one by one with 4 sec duration for each
     {
-      if (ActiveAlarm || DisplayIcons[6] != 0 || DisplayIcons[7] != 0 || DisplayIcons[8] != 0)
-        DisplayDownWarn = true;
+      DisplayCnt = 0;
+      DisplayArraySize = 7;
+
+      byte IconID = DisplayIcons[DisplayStartupIconCnt];
+      if (IconID != 0 && IconID != 1 && IconID != 7)
+      {
+        Serial.println(IconID);
+        // Copying message to buffer
+        if (DisplayStartupIconCnt < 3) // Alarms
+          DisplayIconMessage_FillArray(IconID, ALARM);
+        else // Warnings
+          DisplayIconMessage_FillArray(IconID, WARNING);
+
+        DisplayStratupDelay = 4000;
+      }
       else
-        DisplayDownWarn = false;
-    }
+        DisplayStratupDelay = 0;
 
-    //Ignition = !Ignition;
-    if (DisplayActive)
+      DisplayStartupIconCnt++;
+      DisplayStratupTimer = millis();
+    }
+    else if (DisplayPage == 3)
     {
-      
-      Main_Display1.can_id  = 0x18FF3527 | CAN_EFF_FLAG;
-      Main_Display1.can_dlc = 8;
+      DisplayCnt = 0;
+      DisplayArraySize = 8;
 
-      Main_Display3.can_id  = 0x18FF3727 | CAN_EFF_FLAG;
-      Main_Display3.can_dlc = 8;
-
-      cnt_Msg_count();
-
-      if (DisplayCounter1 == 0)
-      {
-        Main_Display3.data[0] = 0x10;
-        Main_Display3.data[1] = 0x0E;
-
-        Main_Display3.data[2] = 0x01;
-
-        //DisplayDownWarn = true;
-        //DisplayUpWarn = true;
-        Main_Display3.data[3] = (DisplayDownWarn << 7) | (DisplayUpWarn << 5) | (DisplayUpAlarm << 4);
-        Main_Display3.data[4] = 0x01; // enable icons ?
-        Main_Display3.data[5] = (SoundAlarmOnce << 0) | (SoundAlarmCont << 1) | (SoundWarnOnce << 2);
-
-        // Alarm 1 icon
-        Main_Display3.data[6] = 0x01;
-
-        if (ActiveAlarm)
-          Main_Display3.data[7] = DisplayIcons[0];    // ALARM 1
-        else
-          Main_Display3.data[7] = DisplayIcons[3];    // ALARM 1
-
-        Main_Display1.data[0] = 0x10;
-        Main_Display1.data[1] = 0x0F;
-        Main_Display1.data[2] = 0x0A;
-
-        // UpBar zone. 0000 xyza: x - yellow right part, y - red right part (no red color), z - yellow left corner, a - red left corner
-        bool DisplayUpBarAlarm = false;
-
-        if (DisplayAlarmCount != 0)
-          DisplayUpBarAlarm = true;
-
-        Main_Display1.data[3] = (1 << 3) | (!DisplayUpBarAlarm << 1) | (DisplayUpBarAlarm << 0);
-
-        Main_Display1.data[4] = 0x01;
-        Main_Display1.data[5] = 0x00;
-        if (DisplayAlarmCount != 0)
-        {
-          Main_Display1.data[6] = 0x81;
-          Main_Display1.data[7] = 48 + DisplayAlarmCount;
-        }
-        else
-        {
-          Main_Display1.data[6] = 0x01;
-          Main_Display1.data[7] = 32;
-        }
-
-        DisplayCounter1 = 1;
-      }
-      else if (DisplayCounter1 == 1)
-      {
-        // Icons Alarm 2 - warn 1
-        Main_Display3.data[0] = 0x21;
-        Main_Display3.data[1] = 0x01;
-        Main_Display3.data[3] = 0x01;
-        Main_Display3.data[5] = 0x01;
-        Main_Display3.data[7] = 0x00;
-
-        if (ActiveAlarm)
-        {
-          Main_Display3.data[2] = DisplayIcons[1];  // ALARM 2
-          Main_Display3.data[4] = DisplayIcons[2];  // ALARM 3
-          Main_Display3.data[6] = DisplayIcons[3]; // WARN 1
-        }
-        else
-        {
-          Main_Display3.data[2] = DisplayIcons[4];  // ALARM 2
-          Main_Display3.data[4] = DisplayIcons[5];  // ALARM 3
-          Main_Display3.data[6] = DisplayIcons[6]; // WARN 1
-        }
-
-
-        Main_Display1.data[0] = 0x21;
-
-        if (DisplayWarningsCount != 0)
-        {
-          Main_Display1.data[1] = 0x81;
-          Main_Display1.data[2] = 48 + DisplayWarningsCount;
-        }
-        else
-        {
-          Main_Display1.data[1] = 0x01;
-          Main_Display1.data[2] = 32;
-        }
-
-        Main_Display1.data[3] = 0x00; // first number of gear
-        Main_Display1.data[4] = 0x01;
-        Main_Display1.data[6] = 0x01;
-        // 13 - R; 14 - N; 15 - D;
-
-        if (Gear == 0) // if neutral gear
-        {
-          // Displaying 'N' symbol. First number disabled
-          Main_Display1.data[5] = 20; // first number of gear
-          Main_Display1.data[7] = 14; // Second number
-        }
-        else if (Gear < 0) // if reverse
-        {
-          // displaying 'R' symbol and gear number. example R1, R2 etc
-          Main_Display1.data[5] = 13; // first number of geat
-          Main_Display1.data[7] = abs(Gear); // Second number
-        }
-        else if (Gear > 0)
-        {
-          // Displaying current gear
-          Main_Display1.data[5] = Gear / 10; // first number of gear
-
-          byte secondNumber = Gear % 10; // second number is mod from gear
-          if (secondNumber == 0) // if second number is zero
-            Main_Display1.data[7] = 10; // putting here 10 (because 0 = disabled number)
-          else // else if second number is 1-9
-            Main_Display1.data[7] = secondNumber; // just displaying it here
-        }
-        DisplayCounter1 = 2;
-      }
-      else if (DisplayCounter1 == 2)
-      {
-        Main_Display3.data[0] = 0x22;
-        Main_Display3.data[2] = 0x01;
-
-        if (ActiveAlarm)
-        {
-          Main_Display3.data[1] = DisplayIcons[4]; // WARN 2
-          Main_Display3.data[3] = DisplayIcons[5]; // WARN 3
-        }
-        else
-        {
-          Main_Display3.data[1] = DisplayIcons[7]; // WARN 2
-          Main_Display3.data[3] = DisplayIcons[8]; // WARN 3
-        }
-
-        Main_Display3.data[4] = 0x72;
-        Main_Display3.data[5] = 0x65;
-        Main_Display3.data[6] = 0x73;
-        Main_Display3.data[7] = 0x73;
-
-        Main_Display1.data[0] = 0x22;
-
-        //(Transmission, turtle, auto, Manual, parking, gear stick)
-        Main_Display1.data[1] = 1;
-        if (Gear > 0)
-          Main_Display1.data[2] = 3;
-        else
-          Main_Display1.data[2] = 0;
-
-        Main_Display1.data[3] = 14;
-        Main_Display1.data[4] = 14;
-        Main_Display1.data[5] = 14;
-        Main_Display1.data[6] = 14;
-        Main_Display1.data[7] = 14;
-        DisplayCounter1 = 0;
-      }
-
-      ICAN.sendMessage(&Main_Display3);
-      ICAN.sendMessage(&Main_Display1);
-      timer = millis();
+      DisplayStartUp = false;
+      DisplayStartupIconCnt = 0;
     }
+  }
+
+  if (millis() - DispTimer > 10)
+  {
+    DisplayOther.can_id  = 0x18FF3727 | CAN_EFF_FLAG;
+    DisplayOther.can_dlc = 8;
+
+    DisplayCnt++;
+    if (DisplayCnt > DisplayArraySize - 1)
+      DisplayCnt = 0;
+
+    for (byte cnt = 0; cnt < 8; cnt++)
+    {
+      if (DisplayPage == 1)
+        DisplayOther.data[cnt] = DisplayStartupStage1[DisplayCnt][cnt];
+      else if (DisplayPage == 2)
+        DisplayOther.data[cnt] = DisplayStartupStage2[DisplayCnt][cnt];
+      else
+      {
+        if (DispPage == 0)
+        {
+          DisplayOther.data[cnt] = pgm_read_byte(&DisplayBlank[DisplayCnt][cnt]);
+        }
+        else if (DispPage == 1)
+        {
+          DisplayFuelUsage_FillArray();
+          DisplayOther.data[cnt] = DisplayFuelUsage[DisplayCnt][cnt];
+        }
+        else if (DispPage == 2)
+        {
+          DisplayFuelInfo_FillArray();
+          DisplayOther.data[cnt] = DisplayFuelInfo[DisplayCnt][cnt];
+        }
+        else if (DispPage == 3)
+        {
+          DisplayOther.data[cnt] = DisplayTurbo[DisplayCnt][cnt];
+        }
+        else if (DispPage == 4)
+        {
+          DisplaySpeedInfo_FillArray();
+          DisplayOther.data[cnt] = DisplaySpeedInfo[DisplayCnt][cnt];
+        }
+        else if (DispPage == 5)
+        {
+          DisplayTemperature_FillArray();
+          DisplayOther.data[cnt] = DisplayTemperature[DisplayCnt][cnt];
+        }
+      }
+    }
+
+    ICAN.sendMessage(&DisplayOther);
+    DispTimer = millis();
   }
 
   DAF.execute();

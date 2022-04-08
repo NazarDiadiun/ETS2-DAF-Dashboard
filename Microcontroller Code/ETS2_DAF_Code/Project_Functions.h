@@ -1,6 +1,3 @@
-#define lo8(x) ((int)(x)&0xff)
-#define hi8(x) ((int)(x)>>8)
-
 void Dashboard_Main_Callback();
 void Right_Display_Callback();
 void Icons_Callback();

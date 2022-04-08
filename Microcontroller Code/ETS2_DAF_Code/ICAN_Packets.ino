@@ -111,7 +111,7 @@ void Arrows_Callback()
   Arrows.data[4] = FuelLow;
   Arrows.data[5] = FuelHigh; // fuel
   Arrows.data[6] = TempLow;
-  Arrows.data[7] = TempHigh + 1;
+  Arrows.data[7] = TempHigh;
 
   ICAN.sendMessage(&Arrows); // Send this packet to I-CAN Bus
 }
